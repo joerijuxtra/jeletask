@@ -43,33 +43,42 @@ public class HASensorConfig extends HAReadOnlyConfig<HASensorConfig> {
                     """);
             this.put("mode_state_topic", "~/state");
             this.put("mode_command_topic", "~/set");
-            this.put("fan_mode_state_topic", "~/state");
-            this.put("fan_mode_command_topic", "~/set");
             this.put("current_temperature_template", "{{ value_json.current_temperature }}");
             this.put("temperature_state_template", "{{ value_json.target_temperature }}");
             this.put("temperature_command_template", """
                     { "state": "ON", "action": "TARGET", "target_temperature": {{ value|float }} }
                     """);
+            // Teletask keeps reporting the last mode (e.g. HEAT) while the thermostat is OFF
             this.put("mode_state_template", """
-                    {% if value_json.mode|upper == "VENT" %}
+                    {% if value_json.state|upper == "OFF" %}
+                        off
+                    {% elif value_json.mode|upper == "VENT" %}
                         fan_only
                     {% else %}
                         {{ value_json.mode|lower }}
                     {% endif %}
                     """);
             this.put("mode_command_template", """
-                    {% if value|lower == "fan_only" %}
+                    {% if value|lower == "off" %}
+                        {"state": "OFF"}
+                    {% elif value|lower == "fan_only" %}
                         {"state": "ON", "mode": "VENT"}
                     {% else %}
                         {"state": "ON", "mode": "{{ value | upper}}"}
                     {% endif %}
                     """);
-            this.put("fan_mode_command_template", """
-                    {"state": "ON", "fanspeed": "{{ value|upper }}"}
-                    """);
-            this.put("fan_mode_state_template", """
-                    {{ value_json.fanspeed|lower }}
-                    """);
+            String fanModes = parameters.getComponentSpec().getHA_fan_modes();
+            if (fanModes != null && !fanModes.isBlank()) {
+                this.putArray("fan_modes", fanModes.split(","));
+                this.put("fan_mode_state_topic", "~/state");
+                this.put("fan_mode_command_topic", "~/set");
+                this.put("fan_mode_command_template", """
+                        {"state": "ON", "fanspeed": "{{ value|upper }}"}
+                        """);
+                this.put("fan_mode_state_template", """
+                        {{ value_json.fanspeed|lower }}
+                        """);
+            }
             // Bit 0 of output_state is the thermostat's own heat/cool demand (seen on MICROS+: 8 = idle, 9 = demand)
             this.put("action_topic", "~/state");
             this.put("action_template", """
