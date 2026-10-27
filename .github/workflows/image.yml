@@ -1,0 +1,58 @@
+# Builds the JVM image (linux/amd64) and publishes it to ghcr.io/<owner>/jeletask2mqtt.
+# Upstream releases via GitLab CI (ci/); this workflow is for this fork's own builds.
+name: Build image
+
+on:
+  push:
+    branches: [main, "ccr-*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: maven
+
+      # Unit tests for the state calculators; the full suite needs Docker containers (HA, MQTT)
+      - name: Unit tests
+        run: ./mvnw -B test -Dtest='*StateCalculator*Test,MapperTest' -Dsurefire.failIfNoSpecifiedTests=false
+
+      - name: Package jar
+        run: ./mvnw -B package -DskipTests
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/jeletask2mqtt
+          tags: |
+            type=ref,event=branch
+            type=sha,format=short
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
