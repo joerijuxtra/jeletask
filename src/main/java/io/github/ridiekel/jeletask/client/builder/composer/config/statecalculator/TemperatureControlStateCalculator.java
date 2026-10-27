@@ -148,6 +148,10 @@ public class TemperatureControlStateCalculator extends StateCalculatorSupport<Te
 
         if (state.getState() == OnOffToggleStateCalculator.ValidOnOffToggle.OFF) {
             setting = ON_OFF_TOGGLE_STATE_CALCULATOR.toCommand(component, new OnOffState(OnOffToggleStateCalculator.ValidOnOffToggle.OFF));
+        } else if (state.getAction() == null && (isOff(component) || (state.getMode() == null && state.getFanspeed() == null && state.getPreset() == null))) {
+            // Turning on: a mode/preset command does not switch an OFF thermostat back on, so send ON first.
+            // The central restores the previous mode and target temperature.
+            setting = ON_OFF_TOGGLE_STATE_CALCULATOR.toCommand(component, new OnOffState(OnOffToggleStateCalculator.ValidOnOffToggle.ON));
         } else if (state.getAction() != null) {
             setting = ACTION_MAPPER.toBytes(state.getAction());
             data = state.getAction().getData(state);
@@ -160,6 +164,12 @@ public class TemperatureControlStateCalculator extends StateCalculatorSupport<Te
         }
 
         return Bytes.concat(setting, data);
+    }
+
+    private static boolean isOff(ComponentSpec component) {
+        return component != null
+                && component.getState() instanceof TemperatureControlState current
+                && current.getState() == OnOffToggleStateCalculator.ValidOnOffToggle.OFF;
     }
 
     @Override
