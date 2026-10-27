@@ -72,6 +72,24 @@ class TemperatureControlStateCalculatorTest {
     }
 
     @Test
+    void turningOnFromOffSendsOn() {
+        TemperatureControlStateCalculator c = new TemperatureControlStateCalculator();
+        ComponentSpec component = component();
+        component.setState(new TemperatureControlState(OnOffToggleStateCalculator.ValidOnOffToggle.OFF));
+
+        // HA mode_command_template for 'heat' while the thermostat is OFF
+        Assertions.assertThat(c.toCommand(component, c.stateFromMessage("{\"state\": \"ON\", \"mode\": \"HEAT\"}")))
+                .containsExactly((byte) 255);
+        // HA power on payload
+        Assertions.assertThat(c.toCommand(component(), c.stateFromMessage("{ \"state\": \"ON\" }")))
+                .containsExactly((byte) 255);
+        // Already ON: mode command is passed through
+        component.setState(new TemperatureControlState(OnOffToggleStateCalculator.ValidOnOffToggle.ON));
+        Assertions.assertThat(c.toCommand(component, c.stateFromMessage("{\"state\": \"ON\", \"mode\": \"HEAT\"}")))
+                .containsExactly((byte) 95);
+    }
+
+    @Test
     void homeAssistantPayloadsToCommand() {
         TemperatureControlStateCalculator c = new TemperatureControlStateCalculator();
 
