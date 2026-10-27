@@ -33,6 +33,8 @@ public class ComponentSpec {
     private String HA_unit_of_measurement;
     private double HA_temperature_step = 0.5;
     private String HA_modes = "auto,off,cool,heat,dry,fan_only";
+    // Empty = no fan control in HA (e.g. radiator zones)
+    private String HA_fan_modes = "auto,low,medium,high";
 
     // For GAS (General Analog Sensor)
     private String gas_type = "";
