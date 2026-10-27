@@ -70,6 +70,11 @@ public class HASensorConfig extends HAReadOnlyConfig<HASensorConfig> {
             this.put("fan_mode_state_template", """
                     {{ value_json.fanspeed|lower }}
                     """);
+            // Bit 0 of output_state is the thermostat's own heat/cool demand (seen on MICROS+: 8 = idle, 9 = demand)
+            this.put("action_topic", "~/state");
+            this.put("action_template", """
+                    {% if value_json.state == 'OFF' %}off{% elif (value_json.output_state | int(0)) % 2 == 1 %}{{ 'cooling' if value_json.mode == 'COOL' else 'heating' }}{% else %}idle{% endif %}
+                    """);
             this.putArray("preset_modes", "day", "night", "eco", "frost");
             this.put("preset_mode_state_topic", "~/state");
             this.put("preset_mode_command_topic", "~/set");
