@@ -70,6 +70,15 @@ public class HASensorConfig extends HAReadOnlyConfig<HASensorConfig> {
             this.put("fan_mode_state_template", """
                     {{ value_json.fanspeed|lower }}
                     """);
+            this.putArray("preset_modes", "day", "night", "eco", "frost");
+            this.put("preset_mode_state_topic", "~/state");
+            this.put("preset_mode_command_topic", "~/set");
+            this.put("preset_mode_value_template", """
+                    {{ (value_json.preset or 'none')|lower }}
+                    """);
+            this.put("preset_mode_command_template", """
+                    {"state": "ON", "preset": "{{ value|upper }}"}
+                    """);
             this.put("unit_of_measurement", Optional.ofNullable(parameters.getComponentSpec().getHA_unit_of_measurement()).orElse("°C"));
         } else if (isType(parameters, SensorType.PULSECOUNTER)) {
             // TODO: implement both current + total. Only current is implemented right now.
