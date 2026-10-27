@@ -90,6 +90,22 @@ class TemperatureControlStateCalculatorTest {
     }
 
     @Test
+    void manualPresetResendsCurrentTarget() {
+        TemperatureControlStateCalculator c = new TemperatureControlStateCalculator();
+        ComponentSpec component = component();
+        TemperatureControlState current = new TemperatureControlState(OnOffToggleStateCalculator.ValidOnOffToggle.ON);
+        current.setTargetTemperature(new BigDecimal("19.0"));
+        component.setState(current);
+
+        byte[] manual = c.toCommand(component, c.stateFromMessage("{\"state\": \"ON\", \"preset\": \"MANUAL\"}"));
+
+        TemperatureControlState target = new TemperatureControlState(OnOffToggleStateCalculator.ValidOnOffToggle.ON);
+        target.setAction(TemperatureControlStateCalculator.ValidTemperatureControlAction.TARGET);
+        target.setTargetTemperature(new BigDecimal("19.0"));
+        Assertions.assertThat(manual).containsExactly(c.toCommand(component, target));
+    }
+
+    @Test
     void homeAssistantPayloadsToCommand() {
         TemperatureControlStateCalculator c = new TemperatureControlStateCalculator();
 
