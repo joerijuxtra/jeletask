@@ -35,6 +35,8 @@ public class ComponentSpec {
     private String HA_modes = "auto,off,cool,heat,dry,fan_only";
     // Empty = no fan control in HA (e.g. radiator zones)
     private String HA_fan_modes = "auto,low,medium,high";
+    // Presets shown in HA, comma separated: "PRESET" or "Label=PRESET" (DAY, NIGHT, ECO, FROST, MANUAL)
+    private String HA_preset_modes = "day=DAY,night=NIGHT,eco=ECO,frost=FROST";
 
     // For GAS (General Analog Sensor)
     private String gas_type = "";

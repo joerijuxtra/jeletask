@@ -4,7 +4,10 @@ import io.github.ridiekel.jeletask.client.builder.composer.config.configurables.
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.config.HAConfigParameters;
 import io.github.ridiekel.jeletask.mqtt.listener.homeassistant.config.HAReadOnlyConfig;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * <a href="https://www.home-assistant.io/integrations/sensor.mqtt/">MQTT Sensor Discovery</a>
@@ -84,15 +87,23 @@ public class HASensorConfig extends HAReadOnlyConfig<HASensorConfig> {
             this.put("action_template", """
                     {% if value_json.state == 'OFF' %}off{% elif (value_json.output_state | int(0)) % 2 == 1 %}{{ 'cooling' if value_json.mode == 'COOL' else 'heating' }}{% else %}idle{% endif %}
                     """);
-            this.putArray("preset_modes", "day", "night", "eco", "frost");
-            this.put("preset_mode_state_topic", "~/state");
-            this.put("preset_mode_command_topic", "~/set");
-            this.put("preset_mode_value_template", """
-                    {{ (value_json.preset or 'none')|lower }}
-                    """);
-            this.put("preset_mode_command_template", """
-                    {"state": "ON", "preset": "{{ value|upper }}"}
-                    """);
+            // label -> Teletask preset, e.g. "Manueel=MANUAL,Dag=DAY". A missing preset in the state means MANUAL.
+            Map<String, String> presets = new LinkedHashMap<>();
+            for (String entry : Optional.ofNullable(parameters.getComponentSpec().getHA_preset_modes()).orElse("").split(",")) {
+                if (!entry.isBlank()) {
+                    String[] parts = entry.split("=", 2);
+                    presets.put(parts[0].trim(), (parts.length > 1 ? parts[1] : parts[0]).trim().toUpperCase());
+                }
+            }
+            if (!presets.isEmpty()) {
+                String toLabel = presets.entrySet().stream().map(e -> "'" + e.getValue() + "': '" + e.getKey() + "'").collect(Collectors.joining(", ", "{", "}"));
+                String toPreset = presets.entrySet().stream().map(e -> "'" + e.getKey() + "': '" + e.getValue() + "'").collect(Collectors.joining(", ", "{", "}"));
+                this.putArray("preset_modes", presets.keySet().toArray(String[]::new));
+                this.put("preset_mode_state_topic", "~/state");
+                this.put("preset_mode_command_topic", "~/set");
+                this.put("preset_mode_value_template", "{% if value_json.state == 'OFF' %}none{% else %}{{ " + toLabel + ".get((value_json.preset or 'MANUAL')|upper, 'none') }}{% endif %}");
+                this.put("preset_mode_command_template", "{\"state\": \"ON\", \"preset\": \"{{ " + toPreset + ".get(value, value|upper) }}\"}");
+            }
             this.put("unit_of_measurement", Optional.ofNullable(parameters.getComponentSpec().getHA_unit_of_measurement()).orElse("°C"));
         } else if (isType(parameters, SensorType.PULSECOUNTER)) {
             // TODO: implement both current + total. Only current is implemented right now.

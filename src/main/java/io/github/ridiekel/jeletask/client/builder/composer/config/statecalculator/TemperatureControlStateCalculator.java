@@ -9,6 +9,7 @@ import org.apache.commons.lang3.function.TriConsumer;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Optional;
 import java.util.function.Function;
 
 import static io.github.ridiekel.jeletask.client.builder.composer.config.NumberConverter.UNSIGNED_BYTE;
@@ -159,11 +160,23 @@ public class TemperatureControlStateCalculator extends StateCalculatorSupport<Te
             setting = MODE_MAPPER.toBytes(state.getMode());
         } else if (state.getFanspeed() != null) {
             setting = SPEED_MAPPER.toBytes(state.getFanspeed());
+        } else if (state.getPreset() == ValidTemperatureControlPreset.MANUAL) {
+            // There is no "manual" preset in Teletask: re-sending the target temperature switches the zone to manual
+            TemperatureControlState target = new TemperatureControlState(state.getState());
+            target.setTargetTemperature(Optional.ofNullable(state.getTargetTemperature()).orElseGet(() -> currentTargetTemperature(component)));
+            if (target.getTargetTemperature() != null) {
+                setting = ACTION_MAPPER.toBytes(ValidTemperatureControlAction.TARGET);
+                data = ValidTemperatureControlAction.TARGET.getData(target);
+            }
         } else if (state.getPreset() != null) {
             setting = PRESET_MAPPER.toBytes(state.getPreset());
         }
 
         return Bytes.concat(setting, data);
+    }
+
+    private static BigDecimal currentTargetTemperature(ComponentSpec component) {
+        return component != null && component.getState() instanceof TemperatureControlState current ? current.getTargetTemperature() : null;
     }
 
     private static boolean isOff(ComponentSpec component) {
@@ -274,5 +287,10 @@ public class TemperatureControlStateCalculator extends StateCalculatorSupport<Te
         DAY,
         NIGHT,
         ECO,
+        /**
+         * Not a Teletask preset: reported (in HA) when no known preset is active, i.e. a manually set target.
+         * Sending it re-applies the current target temperature.
+         */
+        MANUAL,
     }
 }
