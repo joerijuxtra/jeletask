@@ -23,8 +23,8 @@ public class HASensorConfig extends HAReadOnlyConfig<HASensorConfig> {
         if (isType(parameters, SensorType.TEMPERATURECONTROL)) {
             // HA 'climate'
 
-            this.putInt("min_temp", TEMPERATURE_MINIMUM);
-            this.putInt("max_temp", TEMPERATURE_MAXIMUM);
+            this.putDouble("min_temp", parameters.getComponentSpec().getHA_min_temp());
+            this.putDouble("max_temp", parameters.getComponentSpec().getHA_max_temp());
             this.putDouble("precision", parameters.getComponentSpec().getHA_temperature_step());
             this.putDouble("temp_step", parameters.getComponentSpec().getHA_temperature_step());
             this.putArray("modes", parameters.getComponentSpec().getHA_modes().split(","));
