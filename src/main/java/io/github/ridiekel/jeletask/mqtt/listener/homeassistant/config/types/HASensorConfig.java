@@ -47,7 +47,8 @@ public class HASensorConfig extends HAReadOnlyConfig<HASensorConfig> {
             this.put("mode_state_topic", "~/state");
             this.put("mode_command_topic", "~/set");
             this.put("current_temperature_template", "{{ value_json.current_temperature }}");
-            this.put("temperature_state_template", "{{ value_json.target_temperature }}");
+            // While OFF the central reports its frost protection target (e.g. 5.0); 'None' clears the target in HA
+            this.put("temperature_state_template", "{% if value_json.state == 'OFF' %}None{% else %}{{ value_json.target_temperature }}{% endif %}");
             this.put("temperature_command_template", """
                     { "state": "ON", "action": "TARGET", "target_temperature": {{ value|float }} }
                     """);
