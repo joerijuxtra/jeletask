@@ -85,13 +85,16 @@ public class TemperatureControlStateCalculator extends StateCalculatorSupport<Te
         state.setDayPresetTemperature(bytesToBigDecimal(component, new byte[]{dataBytes[4], dataBytes[5]}));
         state.setNightAtHeatingPresetTemperature(bytesToBigDecimal(component, new byte[]{dataBytes[6], dataBytes[7]}));
         state.setEcoPresetOffset(new BigDecimal(dataBytes[8]).divide(BigDecimal.TEN, 1, RoundingMode.HALF_UP));
-        state.setPreset(PRESET_MAPPER.toEnum(new byte[]{dataBytes[9]}));
-        state.setMode(MODE_MAPPER.toEnum(new byte[]{dataBytes[10]}));
-        state.setFanspeed(SPEED_MAPPER.toEnum(new byte[]{dataBytes[11]}));
+        // Lenient: thermostats without e.g. a fan or preset report 0 here, which is not a valid setting value.
+        state.setPreset(PRESET_MAPPER.toEnumOrNull(new byte[]{dataBytes[9]}));
+        state.setMode(MODE_MAPPER.toEnumOrNull(new byte[]{dataBytes[10]}));
+        state.setFanspeed(SPEED_MAPPER.toEnumOrNull(new byte[]{dataBytes[11]}));
         state.setWindowOpen(dataBytes[13]);       // 0 = open, 255 = closed
         state.setOutputState(dataBytes[14]);      // Untested, no idea about the values
         state.setSwingDirection(dataBytes[15]);   // Untested, no idea about the values
-        state.setNightAtCoolingPresetTemperature(bytesToBigDecimal(component, new byte[]{dataBytes[16], dataBytes[17]}));
+        if (dataBytes.length >= 18) {
+            state.setNightAtCoolingPresetTemperature(bytesToBigDecimal(component, new byte[]{dataBytes[16], dataBytes[17]}));
+        }
 
         return state;
     }
