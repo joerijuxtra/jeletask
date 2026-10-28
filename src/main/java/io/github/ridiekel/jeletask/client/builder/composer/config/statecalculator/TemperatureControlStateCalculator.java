@@ -88,7 +88,7 @@ public class TemperatureControlStateCalculator extends StateCalculatorSupport<Te
         state.setTargetTemperature(bytesToBigDecimal(component, new byte[]{dataBytes[2], dataBytes[3]}));
         state.setDayPresetTemperature(bytesToBigDecimal(component, new byte[]{dataBytes[4], dataBytes[5]}));
         state.setNightAtHeatingPresetTemperature(bytesToBigDecimal(component, new byte[]{dataBytes[6], dataBytes[7]}));
-        state.setEcoPresetOffset(new BigDecimal(dataBytes[8]).divide(BigDecimal.TEN, 1, RoundingMode.HALF_UP));
+        state.setEcoPresetOffset(new BigDecimal(Byte.toUnsignedInt(dataBytes[8])).divide(BigDecimal.TEN, 1, RoundingMode.HALF_UP));
         // Lenient: thermostats without e.g. a fan or preset report 0 here, which is not a valid setting value.
         state.setPreset(PRESET_MAPPER.toEnumOrNull(new byte[]{dataBytes[9]}));
         state.setMode(MODE_MAPPER.toEnumOrNull(new byte[]{dataBytes[10]}));
@@ -260,10 +260,11 @@ public class TemperatureControlStateCalculator extends StateCalculatorSupport<Te
                 s -> presetToByte(s.getNightAtHeatingPresetTemperature()),
                 (c, s, b) -> s.setNightAtHeatingPresetTemperature(byteToPreset(b[1]))
         ),
-        // SET_TEMPSETSTANDBY: the standby (eco) value is a difference, only multiplied by 10
+        // SET_TEMPSETSTANDBY: the eco offset in steps of 0.5 °C (offset x 2). TDS15132 says "x 10", but a
+        // MICROS+ stored 15.0 °C when sent 30 and 12.5 °C when sent 25 (measured 2026-10-28). Reports stay x 10.
         ECO_OFFSET(
-                s -> UNSIGNED_BYTE.convert(s.getEcoPresetOffset().multiply(BigDecimal.TEN).setScale(0, RoundingMode.HALF_UP)),
-                (c, s, b) -> s.setEcoPresetOffset(new BigDecimal(Byte.toUnsignedInt(b[1])).divide(BigDecimal.TEN, 1, RoundingMode.HALF_UP))
+                s -> UNSIGNED_BYTE.convert(s.getEcoPresetOffset().multiply(BigDecimal.valueOf(2)).setScale(0, RoundingMode.HALF_UP)),
+                (c, s, b) -> s.setEcoPresetOffset(new BigDecimal(Byte.toUnsignedInt(b[1])).divide(BigDecimal.valueOf(2), 1, RoundingMode.HALF_UP))
         );
 
         private static byte[] presetToByte(BigDecimal celsius) {
