@@ -88,7 +88,7 @@ public class HASensorConfig extends HAReadOnlyConfig<HASensorConfig> {
             this.put("action_template", """
                     {% if value_json.state == 'OFF' %}off{% elif (value_json.output_state | int(0)) % 2 == 1 %}{{ 'cooling' if value_json.mode == 'COOL' else 'heating' }}{% else %}idle{% endif %}
                     """);
-            // label -> Teletask preset, e.g. "Manueel=MANUAL,Dag=DAY". A missing preset in the state means MANUAL.
+            // label -> Teletask preset, e.g. "Manual=MANUAL,Comfort=DAY". A missing preset in the state means MANUAL.
             Map<String, String> presets = new LinkedHashMap<>();
             for (String entry : Optional.ofNullable(parameters.getComponentSpec().getHA_preset_modes()).orElse("").split(",")) {
                 if (!entry.isBlank()) {

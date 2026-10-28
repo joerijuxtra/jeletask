@@ -414,6 +414,38 @@ Possible values: https://www.home-assistant.io/docs/mqtt/discovery/#lighting
 }
 ```
 
+### Thermostats (TEMPERATURECONTROL)
+
+A `TEMPERATURECONTROL` sensor becomes a Home Assistant `climate` entity with the current and target temperature,
+modes, presets and the thermostat's heat/cool demand as `hvac_action` (heating / idle / off). While the thermostat
+is OFF, HA shows mode `off` and no target temperature. The following optional keys tune the HA entity:
+
+| Key                | Default                                  | Description                                                                                                   |
+|--------------------|------------------------------------------|---------------------------------------------------------------------------------------------------------------|
+| `ha_modes`         | all modes                                | HVAC modes offered in HA, e.g. `heat,off` for radiator zones                                                  |
+| `ha_preset_modes`  | `day=DAY,night=NIGHT,eco=ECO,frost=FROST` | Presets offered in HA, `PRESET` or `Label=PRESET` (DAY, NIGHT, ECO, FROST, MANUAL); empty = no presets       |
+| `ha_fan_modes`     | `auto,low,medium,high`                   | Fan modes offered in HA; empty = no fan control (e.g. radiator zones)                                        |
+| `ha_min_temp`      | `10`                                     | Lowest target temperature in HA                                                                               |
+| `ha_max_temp`      | `30`                                     | Highest target temperature in HA                                                                              |
+
+Example for a radiator zone on an Aurus wall panel, with your own preset labels:
+
+```json
+{
+  "number": 9,
+  "description": "Office thermostat",
+  "type": "TEMPERATURECONTROL",
+  "ha_modes": "heat,off",
+  "ha_min_temp": 5,
+  "ha_fan_modes": "",
+  "ha_preset_modes": "Manual=MANUAL,Comfort=DAY,Night=NIGHT,Eco=ECO",
+  "ha_unit_of_measurement": "°C"
+}
+```
+
+The day/night/eco preset temperatures can be changed over MQTT with the `DAY_PRESET`, `NIGHT_PRESET` and `ECO_OFFSET`
+actions (see [MESSAGES.md](MESSAGES.md)), e.g. from an MQTT `number` entity in Home Assistant.
+
 # Developing
 
 ## Running
