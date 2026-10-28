@@ -446,6 +446,11 @@ Example for a radiator zone on an Aurus wall panel, with your own preset labels:
 The day/night/eco preset temperatures can be changed over MQTT with the `DAY_PRESET`, `NIGHT_PRESET` and `ECO_OFFSET`
 actions (see [MESSAGES.md](MESSAGES.md)), e.g. from an MQTT `number` entity in Home Assistant.
 
+A radiator zone (`ha_modes: heat,off`, Dutch preset labels via `ha_preset_modes`) on a Home Assistant dashboard:
+the standard thermostat card, plus a status line and preset buttons built on the climate entity's attributes.
+
+![Thermostat in Home Assistant](src/main/resources/ha-thermostat.png "TEMPERATURECONTROL thermostat in Home Assistant")
+
 # Developing
 
 ## Running
