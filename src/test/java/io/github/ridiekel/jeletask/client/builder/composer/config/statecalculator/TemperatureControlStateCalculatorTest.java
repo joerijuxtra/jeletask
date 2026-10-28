@@ -115,9 +115,9 @@ class TemperatureControlStateCalculatorTest {
         // SET_TEMPSETNIGHT (27): (18 + 40) x 2 = 116
         Assertions.assertThat(c.toCommand(component(), c.stateFromMessage("{\"state\": \"ON\", \"action\": \"NIGHT_PRESET\", \"night_at_heating_preset_temperature\": 18}")))
                 .containsExactly((byte) 27, (byte) 116);
-        // SET_TEMPSETSTANDBY (88): eco offset 2.5 x 10 = 25
+        // SET_TEMPSETSTANDBY (88): eco offset in 0.5 °C steps, 2.5 x 2 = 5 (measured on a MICROS+)
         Assertions.assertThat(c.toCommand(component(), c.stateFromMessage("{\"state\": \"ON\", \"action\": \"ECO_OFFSET\", \"eco_preset_offset\": 2.5}")))
-                .containsExactly((byte) 88, (byte) 25);
+                .containsExactly((byte) 88, (byte) 5);
     }
 
     @Test
@@ -140,8 +140,17 @@ class TemperatureControlStateCalculatorTest {
         Assertions.assertThat(day.getDayPresetTemperature()).isEqualByComparingTo("21.5");
         TemperatureControlState night = c.fromCommandForTesting(component, new byte[]{27, (byte) 116});
         Assertions.assertThat(night.getNightAtHeatingPresetTemperature()).isEqualByComparingTo("18.0");
-        TemperatureControlState eco = c.fromCommandForTesting(component, new byte[]{88, 25});
+        TemperatureControlState eco = c.fromCommandForTesting(component, new byte[]{88, 5});
         Assertions.assertThat(eco.getEcoPresetOffset()).isEqualByComparingTo("2.5");
+    }
+
+    @Test
+    void ecoOffsetAbove12Point7IsNotNegative() {
+        // byte 8 of the event is the eco offset x 10, unsigned (150 = 15.0 °C, not -10.6)
+        byte[] e = event(26, 95, 0, true);
+        e[8] = (byte) 150;
+        TemperatureControlState state = new TemperatureControlStateCalculator().fromEvent(component(), e);
+        Assertions.assertThat(state.getEcoPresetOffset()).isEqualByComparingTo("15.0");
     }
 
     @Test
