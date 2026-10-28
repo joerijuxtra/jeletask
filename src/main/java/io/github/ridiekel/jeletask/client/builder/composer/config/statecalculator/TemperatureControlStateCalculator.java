@@ -56,7 +56,10 @@ import static io.github.ridiekel.jeletask.client.builder.composer.config.stateca
 public class TemperatureControlStateCalculator extends StateCalculatorSupport<TemperatureControlState> {
     public static final OnOffToggleStateCalculator ON_OFF_TOGGLE_STATE_CALCULATOR = new OnOffToggleStateCalculator();
     private static final Mapper<ValidTemperatureControlAction> ACTION_MAPPER = new Mapper<>(ValidTemperatureControlAction.class, UNSIGNED_BYTE)
-            .add(ValidTemperatureControlAction.TARGET, 87);
+            .add(ValidTemperatureControlAction.TARGET, 87)
+            .add(ValidTemperatureControlAction.DAY_PRESET, 29)
+            .add(ValidTemperatureControlAction.NIGHT_PRESET, 27)
+            .add(ValidTemperatureControlAction.ECO_OFFSET, 88);
     private static final Mapper<ValidTemperatureControlMode> MODE_MAPPER = new Mapper<>(ValidTemperatureControlMode.class, UNSIGNED_BYTE)
             .add(ValidTemperatureControlMode.OFF, 0)
             .add(ValidTemperatureControlMode.AUTO, 94)
@@ -247,7 +250,29 @@ public class TemperatureControlStateCalculator extends StateCalculatorSupport<Te
                 (c, s, b) -> {
                     s.setTargetTemperature(TemperatureStateCalculator.bytesToBigDecimal(c, new byte[]{b[1], b[2]}));
                 }
+        ),
+        // SET_TEMPSETDAY / SET_TEMPSETNIGHT: 1 byte = (°C + 40) x 2 (TDS15132, "Sensor values - SETS")
+        DAY_PRESET(
+                s -> presetToByte(s.getDayPresetTemperature()),
+                (c, s, b) -> s.setDayPresetTemperature(byteToPreset(b[1]))
+        ),
+        NIGHT_PRESET(
+                s -> presetToByte(s.getNightAtHeatingPresetTemperature()),
+                (c, s, b) -> s.setNightAtHeatingPresetTemperature(byteToPreset(b[1]))
+        ),
+        // SET_TEMPSETSTANDBY: the standby (eco) value is a difference, only multiplied by 10
+        ECO_OFFSET(
+                s -> UNSIGNED_BYTE.convert(s.getEcoPresetOffset().multiply(BigDecimal.TEN).setScale(0, RoundingMode.HALF_UP)),
+                (c, s, b) -> s.setEcoPresetOffset(new BigDecimal(Byte.toUnsignedInt(b[1])).divide(BigDecimal.TEN, 1, RoundingMode.HALF_UP))
         );
+
+        private static byte[] presetToByte(BigDecimal celsius) {
+            return UNSIGNED_BYTE.convert(celsius.add(BigDecimal.valueOf(40)).multiply(BigDecimal.valueOf(2)).setScale(0, RoundingMode.HALF_UP));
+        }
+
+        private static BigDecimal byteToPreset(byte value) {
+            return new BigDecimal(Byte.toUnsignedInt(value)).divide(BigDecimal.valueOf(2), 1, RoundingMode.HALF_UP).subtract(BigDecimal.valueOf(40));
+        }
 
         private final Function<TemperatureControlState, byte[]> getData;
         private final TriConsumer<ComponentSpec, TemperatureControlState, byte[]> applyData;
