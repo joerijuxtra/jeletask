@@ -34,6 +34,7 @@ public class MicrosPlusFunctionConfiguration extends ConfigurationSupport<Functi
                 new FunctionConfigurable(Function.COND, 60, ON_OFF_TOGGLE),
                 new FunctionConfigurable(Function.INPUT, 52, new InputStateCalculator()),
                 new FunctionConfigurable(Function.TIMEDFNC, 5, ON_OFF_TOGGLE),
+                new FunctionConfigurable(Function.REGIME, 14, new RegimeStateCalculator()),
                 new FunctionConfigurable(Function.DISPLAYMESSAGE, 54, new DisplayMessageStateCalculator())
         ));
     }

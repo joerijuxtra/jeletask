@@ -75,6 +75,8 @@ public class HomeAssistentAutoConfig {
                     SensorType.PULSECOUNTER, HADeviceType.SENSOR
             )), HASensorConfig::new)),
             Map.entry(Function.RELAY, f(switchSceneLight(HADeviceType.LIGHT), HAOnOffConfig::new)),
+            // Regimes (FNC_REGIME 14): read-only for now -> HA auto discovery: binary_sensor (ON = regime active)
+            Map.entry(Function.REGIME, f(HADeviceType.BINARY_SENSOR, HABinarySensorConfig::new)),
             // Timed functions actually act like a switch. They can only be ON or OFF -> HA auto discovery: switch
             Map.entry(Function.TIMEDFNC, f(switchSceneLight(HADeviceType.SWITCH), HAOnOffConfig::new))
     );

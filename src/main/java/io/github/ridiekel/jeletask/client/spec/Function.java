@@ -20,6 +20,7 @@ public enum Function {
     COND("condition", state -> true),
     INPUT("input", state -> true),
     TIMEDFNC("timed function", state -> true),
+    REGIME("regime", state -> true),
     DISPLAYMESSAGE("Display message", state -> false, false);
     
 
