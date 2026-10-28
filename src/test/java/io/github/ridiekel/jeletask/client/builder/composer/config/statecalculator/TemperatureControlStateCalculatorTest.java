@@ -106,6 +106,45 @@ class TemperatureControlStateCalculatorTest {
     }
 
     @Test
+    void presetTemperatureCommands() {
+        TemperatureControlStateCalculator c = new TemperatureControlStateCalculator();
+
+        // SET_TEMPSETDAY (29): (21.5 + 40) x 2 = 123
+        Assertions.assertThat(c.toCommand(component(), c.stateFromMessage("{\"state\": \"ON\", \"action\": \"DAY_PRESET\", \"day_preset_temperature\": 21.5}")))
+                .containsExactly((byte) 29, (byte) 123);
+        // SET_TEMPSETNIGHT (27): (18 + 40) x 2 = 116
+        Assertions.assertThat(c.toCommand(component(), c.stateFromMessage("{\"state\": \"ON\", \"action\": \"NIGHT_PRESET\", \"night_at_heating_preset_temperature\": 18}")))
+                .containsExactly((byte) 27, (byte) 116);
+        // SET_TEMPSETSTANDBY (88): eco offset 2.5 x 10 = 25
+        Assertions.assertThat(c.toCommand(component(), c.stateFromMessage("{\"state\": \"ON\", \"action\": \"ECO_OFFSET\", \"eco_preset_offset\": 2.5}")))
+                .containsExactly((byte) 88, (byte) 25);
+    }
+
+    @Test
+    void presetTemperatureCommandsDoNotTurnAnOffThermostatOn() {
+        TemperatureControlStateCalculator c = new TemperatureControlStateCalculator();
+        ComponentSpec component = component();
+        component.setState(new TemperatureControlState(OnOffToggleStateCalculator.ValidOnOffToggle.OFF));
+
+        Assertions.assertThat(c.toCommand(component, c.stateFromMessage("{\"state\": \"ON\", \"action\": \"DAY_PRESET\", \"day_preset_temperature\": 20}")))
+                .containsExactly((byte) 29, (byte) 120);
+    }
+
+    @Test
+    void presetTemperatureCommandsRoundTrip() {
+        TemperatureControlStateCalculator c = new TemperatureControlStateCalculator();
+        ComponentSpec component = component();
+        component.setState(new TemperatureControlState(OnOffToggleStateCalculator.ValidOnOffToggle.ON));
+
+        TemperatureControlState day = c.fromCommandForTesting(component, new byte[]{29, (byte) 123});
+        Assertions.assertThat(day.getDayPresetTemperature()).isEqualByComparingTo("21.5");
+        TemperatureControlState night = c.fromCommandForTesting(component, new byte[]{27, (byte) 116});
+        Assertions.assertThat(night.getNightAtHeatingPresetTemperature()).isEqualByComparingTo("18.0");
+        TemperatureControlState eco = c.fromCommandForTesting(component, new byte[]{88, 25});
+        Assertions.assertThat(eco.getEcoPresetOffset()).isEqualByComparingTo("2.5");
+    }
+
+    @Test
     void homeAssistantPayloadsToCommand() {
         TemperatureControlStateCalculator c = new TemperatureControlStateCalculator();
 
