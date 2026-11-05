@@ -10,6 +10,27 @@ import java.math.RoundingMode;
 
 class TemperatureStateCalculatorTest {
     @Test
+    void errorCodeOfTheCentralIsNotATemperature() {
+        TemperatureStateCalculator c = new TemperatureStateCalculator();
+        ComponentSpec component = new ComponentSpec();
+        component.setDecimals(1);
+
+        Assertions.assertThatThrownBy(() -> c.fromEvent(component, new byte[]{0x7F, (byte) 0xFE}))
+                .isInstanceOf(InvalidSensorValueException.class);
+        Assertions.assertThatThrownBy(() -> c.fromEvent(component, new byte[]{(byte) 0xFF, (byte) 0xFF}))
+                .isInstanceOf(InvalidSensorValueException.class);
+    }
+
+    @Test
+    void highestPlausibleRawValueIsStillATemperature() {
+        TemperatureStateCalculator c = new TemperatureStateCalculator();
+        ComponentSpec component = new ComponentSpec();
+        component.setDecimals(1);
+
+        Assertions.assertThat(c.fromEvent(component, new byte[]{0x7F, (byte) 0xEF}).getState()).isNotNull();
+    }
+
+    @Test
     void bytesToTemp() {
         TemperatureStateCalculator c = new TemperatureStateCalculator();
         ComponentSpec component = new ComponentSpec();

@@ -22,6 +22,11 @@ import java.math.RoundingMode;
 public class TemperatureStateCalculator extends StateCalculatorSupport<TemperatureState> {
     public static final NumberConverter NUMBER_CONVERTER = NumberConverter.UNSIGNED_SHORT;
     private static final BigDecimal _273 = new BigDecimal("273");
+    /**
+     * The central reports raw values like 0x7FFE (32766, "3003.6 °C") when it has no valid reading of a sensor.
+     * Anything from here on would be above 2990 °C, so it can never be a real temperature.
+     */
+    static final long FIRST_INVALID_RAW_VALUE = 0x7FF0;
 
     @Override
     protected Class<TemperatureState> getStateType() {
@@ -40,6 +45,11 @@ public class TemperatureStateCalculator extends StateCalculatorSupport<Temperatu
 
     @Override
     public TemperatureState fromEvent(ComponentSpec component, byte[] dataBytes) {
+        long raw = NUMBER_CONVERTER.convert(dataBytes).longValue();
+        if (raw >= FIRST_INVALID_RAW_VALUE) {
+            throw new InvalidSensorValueException("Ignoring raw value " + raw + " of temperature sensor " + component.getNumber() + ": the central has no valid reading");
+        }
+
         BigDecimal rounded_value = bytesToBigDecimal(component, dataBytes);
 
         return new TemperatureState(rounded_value);

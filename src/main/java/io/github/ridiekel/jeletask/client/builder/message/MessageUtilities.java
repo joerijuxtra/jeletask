@@ -1,5 +1,6 @@
 package io.github.ridiekel.jeletask.client.builder.message;
 
+import io.github.ridiekel.jeletask.client.builder.composer.config.statecalculator.InvalidSensorValueException;
 import io.github.ridiekel.jeletask.TeletaskReceiver;
 import io.github.ridiekel.jeletask.client.builder.composer.MessageHandler;
 import io.github.ridiekel.jeletask.client.builder.message.messages.MessageSupport;
@@ -78,6 +79,8 @@ public final class MessageUtilities {
                         }
                     } catch (CentralUnit.ComponentNotFoundInConfigException e) {
                         logger.debug("Exception ({}) caught in extractMessages: {}", e.getClass().getName(), e.getMessage());
+                    } catch (InvalidSensorValueException e) {
+                        logger.warn(e.getMessage());
                     } catch (Exception e) {
                         logger.error("Exception ({}) caught in extractMessages: {}", e.getClass().getName(), e.getMessage(), e);
                     }
